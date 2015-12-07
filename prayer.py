@@ -37,35 +37,35 @@ def addRequest(numlines):
 	newRequest = PrayerRequest()
 	newRequest.setID(numlines)
 	numlines+=1
-	newRequest.setTitle(raw_input("Enter Request Title: "))
+	newRequest.setTitle(input("Enter Request Title: "))
 	newRequest.setDate(date.today())
-	newRequest.setComment(raw_input("Enter Comment if Necessary: "))
+	newRequest.setComment(input("Enter Comment if Necessary: "))
 	requestList.append(newRequest)
-	print newRequest.getTitle() + " has been added.\n"
+	print(newRequest.getTitle() + " has been added.\n")
 	return numlines
 
 def delRequest(numlines):
 	while True:
-		reqdeletenum = raw_input("Which request do you want to delete? ")
+		reqdeletenum = input("Which request do you want to delete? ")
 		try:
 			index = int(reqdeletenum)
 			if index >= 0 and index < len(requestList):
 				break
 			else:
-				print "* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n"
+				print("* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n")
 				continue
 		except (TypeError, ValueError):
-			print "* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n"
+			print("* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n")
 	title=requestList[int(index)].getTitle()
-	choice = raw_input("Are you sure you want to delete "+title+"? [y/n] ")
+	choice = input("Are you sure you want to delete "+title+"? [y/n] ")
 	choice = choice.lower()
 	if choice == "y":
 		requestList[int(index):int(index)+1]=[]
 		numlines-=1
 		renumber()
-		print title+" has been deleted.\n"
+		print(title+" has been deleted.\n")
 	else:
-		print title+" has not been deleted.\n"
+		print(title+" has not been deleted.\n")
 	return numlines
 
 def renumber():
@@ -73,12 +73,12 @@ def renumber():
 		requestList[i].setID(i)
 			
 def viewRequests(requestList):
-	print "\n******************************"
-	print "Request List"
-	print "------------------------------"
+	print("\n******************************")
+	print("Request List")
+	print("------------------------------")
 	for request in requestList:
-		print request.toString()
-	print "******************************\n"
+		print(request.toString())
+	print("******************************\n")
 
 def viewRandomRequests(requestList):
 	randomRequests = random.sample(requestList, 25)
@@ -96,7 +96,7 @@ def viewOldRequests(requestList):
             del oldRequests[10:]
         viewRequests(oldRequests)
     else:
-        print "All requests are up to date."
+        print("All requests are up to date.")
 
 def searchRequests(requestList, searchTerm):
     results=[]
@@ -109,7 +109,7 @@ def searchRequests(requestList, searchTerm):
     if len(results) != 0:
         viewRequests(results)
     else:
-        print "Can't find search term."
+        print("Can't find search term.")
 
 def loadRequests(filename, requestList, numlines):
 	# this list holds the individual lines in the file
@@ -142,7 +142,7 @@ def loadRequests(filename, requestList, numlines):
 				else:
 					continue
 			else:
-				print "can't find it!"
+				print("can't find it!")
 				break
 		newRequest.setID(numlines)
 		newRequest.setTitle(title)
@@ -155,7 +155,7 @@ def saveFile(filename):
 	with open(filename, 'w') as newfile:
 		for request in requestList:
 			newfile.write(request.getDate().strftime("%d%m%Y") + request.getTitle() + "<>" + request.getComment() + "\n")
-	print "*Save Successfull*\n"
+	print("*Save Successfull*\n")
 
 def editRequest(requestList, i_reqeditnum):
 	try:
@@ -164,24 +164,24 @@ def editRequest(requestList, i_reqeditnum):
 
 
 			saveflag=True
-			print "Editing " + requestList[i_reqeditnum].getTitle() + "..."
-			whichpart = raw_input("Title, Comment, or Mark current (t/c/m)?    (x = cancel)\n")
+			print("Editing " + requestList[i_reqeditnum].getTitle() + "...")
+			whichpart = input("Title, Comment, or Mark current (t/c/m)?    (x = cancel)\n")
 			whichpart = whichpart.lower()
 			if whichpart=="t":
-				requestList[i_reqeditnum].setTitle(raw_input("Please enter new title: "))
+				requestList[i_reqeditnum].setTitle(input("Please enter new title: "))
 				requestList[i_reqeditnum].setDate(date.today())
-				print requestList[i_reqeditnum].getTitle() + " has been updated."
+				print(requestList[i_reqeditnum].getTitle() + " has been updated.")
 			elif whichpart=="c":
-				requestList[i_reqeditnum].setComment(raw_input("Please enter new comment: "))
+				requestList[i_reqeditnum].setComment(input("Please enter new comment: "))
 				requestList[i_reqeditnum].setDate(date.today())
-				print requestList[i_reqeditnum].getTitle() + " has been updated."
+				print(requestList[i_reqeditnum].getTitle() + " has been updated.")
 			elif whichpart=="m":
 				requestList[i_reqeditnum].setDate(date.today())
-				print requestList[i_reqeditnum].getTitle() + " has been updated."
+				print(requestList[i_reqeditnum].getTitle() + " has been updated.")
 			elif whichpart=="x":
 				saveflag=False
 			else:
-				print "* Invalid input. *\n"
+				print("* Invalid input. *\n")
 
 		else:
 			pass
@@ -206,13 +206,13 @@ if __name__ == "__main__":
 	numlines = loadRequests("requests", requestList, numlines)
 	menu = "Pick an action:\nt. Today's Requests\no. View Old Requests\nv. View All Requests\na. Add New Request\nf. Find Request\ne. Edit Request\nd. Delete Request\ns. Save\nq. Quit\n?  Show Menu\n"
 
-	print "*************************************************************"
-	print "*          Welcome to the Prayer Request Organizer          *"
-	print "*************************************************************"
-	print menu
+	print("*************************************************************")
+	print("*          Welcome to the Prayer Request Organizer          *")
+	print("*************************************************************")
+	print(menu)
 		
 	while True:
-		myinput = raw_input("> ")
+		myinput = input("> ")
 		myinput = myinput.lower()
 		try:
 			i_reqeditnum = int(myinput)
@@ -228,14 +228,14 @@ if __name__ == "__main__":
 
 		if myinput =="q": # Quit
 			if saveflag:
-				yesno = raw_input("Do you want to save (y/n)? ")
+				yesno = input("Do you want to save (y/n)? ")
 				yesno=yesno.lower()
 				if yesno=="y":
 					saveFile("requests")
-			print "\nGoodbye!\n"
+			print("\nGoodbye!\n")
 			exit()
 		elif myinput =="?": # Prints Menu
-			print menu
+			print(menu)
 		elif myinput =="": # No Input, loop again
 			continue
 		elif myinput =="t": # Today's Requests
@@ -248,20 +248,20 @@ if __name__ == "__main__":
 			numlines=addRequest(numlines)
 			saveflag=True
 		elif myinput =="f": # Search Requests
-			searchTerm = raw_input("What do you want to search for? ")
+			searchTerm = input("What do you want to search for? ")
 			searchRequests(requestList, searchTerm)
 		elif myinput =="e": # Edit Request
 			while True:
-				reqeditnum = raw_input("Which request do you want to edit? ")
+				reqeditnum = input("Which request do you want to edit? ")
 				try:
 					i_reqeditnum = int(reqeditnum)
 					if i_reqeditnum >= 0 and i_reqeditnum < len(requestList):
 						break
 					else:
-						print "* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n"
+						print("* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n")
 						continue
 				except (TypeError, ValueError):
-					print "* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n"
+					print("* Please type an integer from 0 to " + str(len(requestList)-1)+" *\n")
 			boolsave = editRequest(requestList, i_reqeditnum)
 			saveflag = saveflag or boolsave
 		elif myinput =="d": # Delete Request
@@ -273,4 +273,4 @@ if __name__ == "__main__":
 		elif len(myinput) >= 2:
 			searchRequests(requestList, myinput)
 		else:
-			print "* Invalid input. *\n"
+			print("* Invalid input. *\n")
