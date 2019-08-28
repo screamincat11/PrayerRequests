@@ -1,10 +1,12 @@
 class PrayerRequest:
-    def __init__(self, i_reqID=None, s_title=None, d_modDate=None, s_comment=None):
+    def __init__(self, i_reqID=None, s_title=None, d_addDate=None, d_modDate=None, s_comment=None, sar_categories=[]):
         # this program can handle up to 999 requests
         self.i_reqID = i_reqID
+        self.d_addDate = d_addDate
         self.d_modDate = d_modDate
         self.s_title = s_title
         self.s_comment = s_comment
+        self.sar_categories = sar_categories
 
     def getID(self):
         return self.i_reqID
@@ -16,6 +18,11 @@ class PrayerRequest:
     def setDate(self, newDate):
         self.d_modDate = newDate
         
+    def getAddDate(self):
+        return self.d_addDate
+    def setAddDate(self, newDate):
+        self.d_addDate = newDate
+
     def getTitle(self):
         return self.s_title
     def setTitle(self, title):
@@ -26,11 +33,16 @@ class PrayerRequest:
     def setComment(self, comment):
         self.s_comment = comment
         
+    def getCategories(self):
+        return self.sar_categories
+    def setCategories(self, categories):
+        self.sar_categories = categories
+
     def getObject(self):
-        return [self.i_reqID, self.d_modDate, self.s_title, self.s_comment]
+        return [self.i_reqID, self.d_addDate, self.d_modDate, self.s_title, self.s_comment, self.sar_categories]
 
     def toString(self):
-        return str(self.i_reqID).zfill(3)+"-"+self.d_modDate.strftime("%d %b %Y")+" "+self.s_title+" --> "+self.s_comment
+        return str(self.i_reqID).zfill(3)+"-A:"+self.d_addDate.strftime("%d %b %Y")+ "; M:"+self.d_modDate.strftime("%d %b %Y")+" "+self.s_title+" --> "+self.s_comment+" -- CATEGORIES -- "+",".join(self.sar_categories)
 
         
 def addRequest(numlines):
@@ -38,11 +50,22 @@ def addRequest(numlines):
     newRequest.setID(numlines)
     numlines+=1
     newRequest.setTitle(input("Enter Request Title: "))
+    newRequest.setAddDate(date.today())
     newRequest.setDate(date.today())
     newRequest.setComment(input("Enter Comment if Necessary: "))
+    newRequest.setCategories(createCategoryArray(input("Enter Category(s), separate by \",\": ")))
     requestList.append(newRequest)
     print(newRequest.getTitle() + " has been added.\n")
     return numlines
+
+# Helper function for addRequest that parses a string of categories into an array
+def createCategoryArray(str_categories):
+    #  .split(',')
+    if str_categories=="":
+        return []
+    arr_categories = str_categories.split(',')
+    return arr_categories
+
 
 def delRequest(numlines):
     while True:
@@ -104,12 +127,24 @@ def searchRequests(requestList, searchTerm):
     for request in requestList:
         title = request.getTitle().lower()
         comment = request.getComment().lower()
-        if (mySearchTerm in title or mySearchTerm in comment):
+        categories = ','.join(request.getCategories()).lower()
+        if (mySearchTerm in title or mySearchTerm in comment or mySearchTerm in categories):
             results.append(request)
     if len(results) != 0:
         viewRequests(results)
     else:
         print("Can't find search term.")
+
+def searchCategories(requestList, searchTerm):
+    results=[]
+    searchTerm=searchTerm.lower()
+    for request in requestList:
+        if (searchTerm in ','.join(request.getCategories()).lower()):
+            results.append(request)
+    if len(results) != 0:
+        viewRequests(results)
+    else:
+        print("Can't find reqeusts with category: "+searchTerm)
 
 def loadRequests(filename, requestList, numlines):
     # this list holds the individual lines in the file
@@ -121,33 +156,65 @@ def loadRequests(filename, requestList, numlines):
     for request in reqfromfile:
         newRequest = PrayerRequest()
         request=request.replace('\ufeff', '')
+        # remove new line
+        request=request[:-1]
         # extract date
-        day = int(request[0:2])
-        month = int(request[2:4])
-        year = int(request[4:8])
+        addday = int(request[0:2])
+        addmonth = int(request[2:4])
+        addyear = int(request[4:8])
+        newRequest.setAddDate(date(addyear, addmonth, addday))
+        day = int(request[8:10])
+        month = int(request[10:12])
+        year = int(request[12:16])
         newRequest.setDate(date(year, month, day))
+        #print(newRequest.getAddDate())
+        #print(newRequest.getDate())
         # extract request
-        text=request[8:]
+        text=request[16:]
         title=""
         comment=""
+        categories=[]
+        # Get Title Loop
         j = 0
         for i in range(len(text)):
             if i < len(text)-2:
                 if text[i:i+2] == "<>":
                     j=i
                     title = text[:j]
-                    comment = text[j+2:]
+                    # make text equip comment and categories
+                    text = text[j+2:]
+                    # comment = text[j+2:]
                     #removes new line
-                    comment = comment[:-1]
+                    # comment = comment[:-1]
                     break
                 else:
                     continue
             else:
                 print("can't find it!")
                 break
+
+        # Get Comment and Categories Loop
+        j = 0
+        for i in range(len(text)):
+            if i < len(text)-1:
+                if text[i:i+2] == "<>":
+                    j=i
+                    comment = text[:j]
+                    str_categories = text[j+2:]
+                    categories = str_categories.split(',')
+                    # print(str(len(text))+text+"found it!")
+                    break
+                else:
+                    continue
+            else:
+                print("strlen: "+str(len(text))+text+"can't find it!! i:"+str(i)+" sliced:"+text[i:i+2])
+                break
+
+
         newRequest.setID(numlines)
         newRequest.setTitle(title)
         newRequest.setComment(comment)
+        newRequest.setCategories(categories)
         requestList.append(newRequest)
         numlines+=1
     return numlines
@@ -155,7 +222,7 @@ def loadRequests(filename, requestList, numlines):
 def saveFile(filename):
     with open(filename, 'w') as newfile:
         for request in requestList:
-            newfile.write(request.getDate().strftime("%d%m%Y") + request.getTitle() + "<>" + request.getComment() + "\n")
+            newfile.write(request.getAddDate().strftime("%d%m%Y") + request.getDate().strftime("%d%m%Y") + request.getTitle() + "<>" + request.getComment() + "<>" + ",".join(request.getCategories()) + "\n")
     print("*Save Successfull*\n")
 
 def editRequest(requestList, i_reqeditnum):
@@ -166,7 +233,7 @@ def editRequest(requestList, i_reqeditnum):
 
             saveflag=True
             print("Editing " + requestList[i_reqeditnum].getTitle() + "...")
-            whichpart = input("Title, Comment, or Mark current (t/c/m)?    (x = cancel)\n")
+            whichpart = input("Title, Comment, Category, or Mark current (t/c/a/m)?    (x = cancel)\n")
             whichpart = whichpart.lower()
             if whichpart=="t":
                 requestList[i_reqeditnum].setTitle(input("Please enter new title: "))
@@ -174,6 +241,10 @@ def editRequest(requestList, i_reqeditnum):
                 print(requestList[i_reqeditnum].getTitle() + " has been updated.")
             elif whichpart=="c":
                 requestList[i_reqeditnum].setComment(input("Please enter new comment: "))
+                requestList[i_reqeditnum].setDate(date.today())
+                print(requestList[i_reqeditnum].getTitle() + " has been updated.")
+            elif whichpart=="a":
+                requestList[i_reqeditnum].setCategories(createCategoryArray(input("Please enter new categories, separated by commas: ")))
                 requestList[i_reqeditnum].setDate(date.today())
                 print(requestList[i_reqeditnum].getTitle() + " has been updated.")
             elif whichpart=="m":
@@ -251,6 +322,9 @@ if __name__ == "__main__":
         elif myinput =="f": # Search Requests
             searchTerm = input("What do you want to search for? ")
             searchRequests(requestList, searchTerm)
+        elif myinput =="c": # Search Requests for a category
+            searchTerm = input("What category do you want to search for? ")
+            searchCategories(requestList, searchTerm)
         elif myinput =="e": # Edit Request
             while True:
                 reqeditnum = input("Which request do you want to edit? ")
