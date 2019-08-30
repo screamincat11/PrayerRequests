@@ -1,5 +1,5 @@
 class PrayerRequest:
-    def __init__(self, i_reqID=None, s_title=None, d_addDate=None, d_modDate=None, s_comment=None, sar_categories=[]):
+    def __init__(self, i_reqID=None, s_title=None, d_addDate=None, d_modDate=None, s_comment=None, sar_categories=[], b_urgent=False):
         # this program can handle up to 999 requests
         self.i_reqID = i_reqID
         self.d_addDate = d_addDate
@@ -7,6 +7,7 @@ class PrayerRequest:
         self.s_title = s_title
         self.s_comment = s_comment
         self.sar_categories = sar_categories
+        self.b_urgent = b_urgent
 
     def getID(self):
         return self.i_reqID
@@ -37,6 +38,11 @@ class PrayerRequest:
         return self.sar_categories
     def setCategories(self, categories):
         self.sar_categories = categories
+
+    def getUrgent(self):
+        return self.b_urgent
+    def setUrgent(self, urgent):
+        self.b_urgent = urgent
 
     def getObject(self):
         return [self.i_reqID, self.d_addDate, self.d_modDate, self.s_title, self.s_comment, self.sar_categories]
@@ -103,9 +109,33 @@ def viewRequests(requestList):
         print(request.toString())
     print("******************************\n")
 
-def viewRandomRequests(requestList):
-    randomRequests = random.sample(requestList, 25)
-    viewRequests(randomRequests)
+def viewRandomRequests(requestList, numlines, numrequestedreqs):
+    results = []
+    currentArrayLength = 0
+    if numrequestedreqs > numlines:
+        print("Requesting too many Requests!")
+        viewRequests(requestList)
+    else:
+        for request in requestList:
+            if request.getUrgent():
+                #print("Urgent! " + str(request.getID()))
+                results.append(request)
+                currentArrayLength+=1
+        while currentArrayLength < numrequestedreqs:
+            matchFlag = 0
+            randomIndex = random.randint(0,numlines-1)
+            randomID = requestList[randomIndex].getID()
+            for request in results:
+                if request.getID() == randomID:
+                    matchFlag = 1
+                    break
+            if matchFlag == 0:
+                results.append(requestList[randomIndex])
+                currentArrayLength+=1
+        viewRequests(results)
+
+            #randomRequests = random.sample(requestList, numrequestedreqs)
+            #viewRequests(randomRequests)
 
 def viewOldRequests(requestList):
     oldRequests=[]
@@ -214,15 +244,19 @@ def loadRequests(filename, requestList, numlines):
         newRequest.setID(numlines)
         newRequest.setTitle(title)
         newRequest.setComment(comment)
+        if len(comment)>=8:
+            if comment[:8] == "Urgent: ":
+                newRequest.setUrgent(True)
         newRequest.setCategories(categories)
         requestList.append(newRequest)
         numlines+=1
     return numlines
     
 def saveFile(filename):
-    with open(filename, 'w') as newfile:
+    with open(filename, 'w', encoding='utf-8') as newfile:
         for request in requestList:
-            newfile.write(request.getAddDate().strftime("%d%m%Y") + request.getDate().strftime("%d%m%Y") + request.getTitle() + "<>" + request.getComment() + "<>" + ",".join(request.getCategories()) + "\n")
+            texttowrite = request.getAddDate().strftime("%d%m%Y") + request.getDate().strftime("%d%m%Y") + request.getTitle() + "<>" + request.getComment() + "<>" + ",".join(request.getCategories()) + "\n"
+            newfile.write(texttowrite) #.encode('utf8'))
     print("*Save Successfull*\n")
 
 def editRequest(requestList, i_reqeditnum):
@@ -233,7 +267,7 @@ def editRequest(requestList, i_reqeditnum):
 
             saveflag=True
             print("Editing " + requestList[i_reqeditnum].getTitle() + "...")
-            whichpart = input("Title, Comment, Category, or Mark current (t/c/a/m)?    (x = cancel)\n")
+            whichpart = input("Title, Comment, Category, Urgency or Mark current (t/c/a/u/m)?    (x = cancel)\n")
             whichpart = whichpart.lower()
             if whichpart=="t":
                 requestList[i_reqeditnum].setTitle(input("Please enter new title: "))
@@ -247,6 +281,30 @@ def editRequest(requestList, i_reqeditnum):
                 requestList[i_reqeditnum].setCategories(createCategoryArray(input("Please enter new categories, separated by commas: ")))
                 requestList[i_reqeditnum].setDate(date.today())
                 print(requestList[i_reqeditnum].getTitle() + " has been updated.")
+            elif whichpart=="u":
+                comment = requestList[i_reqeditnum].getComment()
+                if requestList[i_reqeditnum].getUrgent() == True:
+                    if comment[:8]=="Urgent: ":
+                        comment=comment[8:]
+                        requestList[i_reqeditnum].setUrgent(False)
+                        print("Urgency set to False")
+                    else:
+                        print("Urgency Mismatch! expected True")
+                elif requestList[i_reqeditnum].getUrgent() == False:
+                    if len(comment)>7:
+                        if comment[:8] != "Urgent: ":
+                            comment="Urgent: "+comment
+                        else:
+                            print("Urgency Mismatch! expected False")
+                            print("comment[:8] is --" + comment[:8] + "--")
+                    else:
+                        # print("<=7")
+                        comment="Urgent: "+comment
+                    requestList[i_reqeditnum].setUrgent(True)
+                    print("Urgency set to True")
+                else:
+                    print("Something went urgently wrong!")
+                requestList[i_reqeditnum].setComment(comment)
             elif whichpart=="m":
                 requestList[i_reqeditnum].setDate(date.today())
                 print(requestList[i_reqeditnum].getTitle() + " has been updated.")
@@ -311,7 +369,7 @@ if __name__ == "__main__":
         elif myinput =="": # No Input, loop again
             continue
         elif myinput =="t": # Today's Requests
-            viewRandomRequests(requestList)
+            viewRandomRequests(requestList, numlines, 25)
         elif myinput =="o": # Old Requests
             viewOldRequests(requestList)
         elif myinput =="v": # View All Requests
