@@ -106,7 +106,7 @@ def viewRequests(requestList):
     print("Request List")
     print("------------------------------")
     for request in requestList:
-        print(request.toString())
+        print(wrapper.fill(request.toString()))
     print("******************************\n")
 
 def viewRandomRequests(requestList, numlines, numrequestedreqs):
@@ -327,6 +327,7 @@ if __name__ == "__main__":
     from datetime import date
     import random
     import os
+    import textwrap
     os.system('cls' if os.name=='nt' else 'clear')
     saveflag = False
     boolsave = False
@@ -334,6 +335,7 @@ if __name__ == "__main__":
     #categoryList = []
     numlines = 0
     numlines = loadRequests("requests.txt", requestList, numlines)
+    wrapper = textwrap.TextWrapper(width=200, subsequent_indent="   ")
     menu = "Pick an action:\nt. Today's Requests\no. View Old Requests\nv. View All Requests\na. Add New Request\nf. Find Request\ne. Edit Request\nd. Delete Request\ns. Save\nq. Quit\n?  Show Menu\n"
 
     print("*************************************************************")
