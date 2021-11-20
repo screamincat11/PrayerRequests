@@ -72,6 +72,48 @@ def createCategoryArray(str_categories):
     arr_categories = str_categories.split(',')
     return arr_categories
 
+# Helper function to replace <>&'" to XML entity references
+def convertXMLEntityReferences(str_danger):
+    str_safe=str_danger.replace("<", "&lt;")
+    str_safe=str_safe.replace(">", "&gt;")
+    str_safe=str_safe.replace("&", "&amp;")
+    str_safe=str_safe.replace("'", "&apos;")
+    str_safe=str_safe.replace('"', "&quot;")
+    return str_safe
+
+# Creates XML from requestList
+def createXMLFromRequestList(requestList):
+    print("creating XML")
+    xmlString=""
+    xmlProlog="<?xml version='1.0' encoding='UTF-8'?><?xml-stylesheet type='text/css' href='reqstyle.css'?>"
+    xmlString=xmlProlog+"<requestList>"  #create root XML element
+
+    for request in requestList:  # Loop through requests and create XML children 
+        if request.getUrgent():  # If request is urgent, adjust XML attribute accordingly
+            xmlString=xmlString+"<request urgency='true'>"
+        else:
+            xmlString=xmlString+"<request urgency='false'>"
+
+        xmlString=xmlString+"<reqID>"+str(request.getID()).zfill(3)+"</reqID>"
+        xmlString=xmlString+"<title>"+convertXMLEntityReferences(request.getTitle())+"</title>"
+        if request.getUrgent(): #  If urgent, removes the "Urgent: " prefix from comment as this is how it's saved in the save file
+            xmlString=xmlString+"<comment>"+convertXMLEntityReferences(request.getComment()[8:])+"</comment>"
+        else:
+            xmlString=xmlString+"<comment>"+convertXMLEntityReferences(request.getComment())+"</comment>"
+        xmlString=xmlString+"<modDate>"+request.getDate().strftime("%d %b %Y")+"</modDate>"
+        xmlString=xmlString+"<addDate>"+request.getAddDate().strftime("%d %b %Y")+"</addDate>"
+        xmlString=xmlString+"<category>"+",".join(request.getCategories())+"</category>"
+
+
+        xmlString=xmlString+"</request>"  # Close root element
+
+    xmlString=xmlString+"</requestList>"
+    saveXMLFile("requests.xml",xmlString)
+
+def saveXMLFile(filename,xmlString):
+    with open(filename, 'w', encoding='utf-8') as newfile:
+        newfile.write(xmlString) #.encode('utf8'))
+    print("* XML Save Successfull*\n")
 
 def delRequest(numlines):
     while True:
@@ -101,24 +143,25 @@ def renumber():
     for i in range(len(requestList)):
         requestList[i].setID(i)
             
-def viewRequests(requestList):
+def viewRequests(requestList, printXML=False):
     print("\n******************************")
     print("Request List")
     print("------------------------------")
     for request in requestList:
-        print(wrapper.fill(request.toString()))
+        print(request.toString())
     print("******************************\n")
+    if printXML:
+        createXMLFromRequestList(requestList)
 
-def viewRandomRequests(requestList, numlines, numrequestedreqs):
+def viewRandomRequests(requestList, numlines, numrequestedreqs, printXML=False):
     results = []
     currentArrayLength = 0
     if numrequestedreqs > numlines:
         print("Requesting too many Requests!")
-        viewRequests(requestList)
+        viewRequests(requestList, printXML)
     else:
         for request in requestList:
             if request.getUrgent():
-                #print("Urgent! " + str(request.getID()))
                 results.append(request)
                 currentArrayLength+=1
         while currentArrayLength < numrequestedreqs:
@@ -132,12 +175,9 @@ def viewRandomRequests(requestList, numlines, numrequestedreqs):
             if matchFlag == 0:
                 results.append(requestList[randomIndex])
                 currentArrayLength+=1
-        viewRequests(results)
+        viewRequests(results, printXML)
 
-            #randomRequests = random.sample(requestList, numrequestedreqs)
-            #viewRequests(randomRequests)
-
-def viewOldRequests(requestList):
+def viewOldRequests(requestList, printXML=False):
     oldRequests=[]
     for request in requestList:
         timeDelta = date.today() - request.d_modDate
@@ -147,11 +187,11 @@ def viewOldRequests(requestList):
         oldRequests.sort(key=lambda request: request.d_modDate)
         if len(oldRequests) > 10:
             del oldRequests[10:]
-        viewRequests(oldRequests)
+        viewRequests(oldRequests, printXML)
     else:
         print("All requests are up to date.")
 
-def searchRequests(requestList, searchTerm):
+def searchRequests(requestList, searchTerm, printXML=False):
     results=[]
     mySearchTerm = searchTerm.lower()
     for request in requestList:
@@ -161,18 +201,18 @@ def searchRequests(requestList, searchTerm):
         if (mySearchTerm in title or mySearchTerm in comment or mySearchTerm in categories):
             results.append(request)
     if len(results) != 0:
-        viewRequests(results)
+        viewRequests(results, printXML)
     else:
         print("Can't find search term.")
 
-def searchCategories(requestList, searchTerm):
+def searchCategories(requestList, searchTerm, printXML=False):
     results=[]
     searchTerm=searchTerm.lower()
     for request in requestList:
         if (searchTerm in ','.join(request.getCategories()).lower()):
             results.append(request)
     if len(results) != 0:
-        viewRequests(results)
+        viewRequests(results, printXML)
     else:
         print("Can't find reqeusts with category: "+searchTerm)
 
@@ -264,7 +304,6 @@ def editRequest(requestList, i_reqeditnum):
         if i_reqeditnum >= 0 and i_reqeditnum < len(requestList):
             #  edit this number...
 
-
             saveflag=True
             print("Editing " + requestList[i_reqeditnum].getTitle() + "...")
             whichpart = input("Title, Comment, Category, Urgency or Mark current (t/c/a/u/m)?    (x = cancel)\n")
@@ -328,6 +367,7 @@ if __name__ == "__main__":
     import random
     import os
     import textwrap
+    import xml.etree.ElementTree as ET
     os.system('cls' if os.name=='nt' else 'clear')
     saveflag = False
     boolsave = False
@@ -336,7 +376,7 @@ if __name__ == "__main__":
     numlines = 0
     numlines = loadRequests("requests.txt", requestList, numlines)
     wrapper = textwrap.TextWrapper(width=200, subsequent_indent="   ")
-    menu = "Pick an action:\nt. Today's Requests\no. View Old Requests\nv. View All Requests\na. Add New Request\nf. Find Request\ne. Edit Request\nd. Delete Request\ns. Save\nq. Quit\n?  Show Menu\n"
+    menu = "Pick an action:\nt. Today's Requests\no. View Old Requests\nv. View All Requests\na. Add New Request\nf. Find Request\nc. Find Catagory\ne. Edit Request\nd. Delete Request\ns. Save\nq. Quit\n?  Show Menu\n** Append 'x' to your command to generate XML file **\n"
 
     print("*************************************************************")
     print("*          Welcome to the Prayer Request Organizer          *")
@@ -372,19 +412,31 @@ if __name__ == "__main__":
             continue
         elif myinput =="t": # Today's Requests
             viewRandomRequests(requestList, numlines, 25)
+        elif myinput =="tx": # Today's Requests with XML
+            viewRandomRequests(requestList, numlines, 25, True)
         elif myinput =="o": # Old Requests
             viewOldRequests(requestList)
+        elif myinput =="ox": # Old Requests with XML
+            viewOldRequests(requestList, True)
         elif myinput =="v": # View All Requests
             viewRequests(requestList)
+        elif myinput =="vx": # View All Requests with XML
+            viewRequests(requestList, True)
         elif myinput =="a": # Add New Request
             numlines=addRequest(numlines)
             saveflag=True
         elif myinput =="f": # Search Requests
             searchTerm = input("What do you want to search for? ")
             searchRequests(requestList, searchTerm)
+        elif myinput =="fx": # Search Requests with XML
+            searchTerm = input("What do you want to search for? ")
+            searchRequests(requestList, searchTerm, True)
         elif myinput =="c": # Search Requests for a category
             searchTerm = input("What category do you want to search for? ")
             searchCategories(requestList, searchTerm)
+        elif myinput =="cx": # Search Requests for a category with XML
+            searchTerm = input("What category do you want to search for? ")
+            searchCategories(requestList, searchTerm, True)
         elif myinput =="e": # Edit Request
             while True:
                 reqeditnum = input("Which request do you want to edit? ")
@@ -402,6 +454,8 @@ if __name__ == "__main__":
         elif myinput =="d": # Delete Request
             numlines=delRequest(numlines)
             saveflag=True
+        elif myinput =="x": # XML
+            createXMLFromRequestList(requestList)
         elif myinput =="s": # Save
             saveFile("requests.txt")
             saveflag=False

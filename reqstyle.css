@@ -1,0 +1,37 @@
+* { color-adjust: exact;  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+requestList {
+    font-size: 95%;
+}
+request {
+    display: block;
+    margin-bottom: 0.5em;
+    font-size: 1em;
+}
+reqID {
+    font-size: 0.75em;
+}
+request[urgency="true"] {
+    background-color: Gold;
+}
+comment::before {
+    content: " - ";
+}
+modDate::before {
+    content: " m:";
+}
+addDate::before {
+    content: " a:";
+}
+modDate, addDate, category {
+    font-size: 0.75em;
+    font-style: italic;
+}
+category::before {
+    content: " ";
+}
+title {
+    font-weight: bold;
+}
+title::before {
+    content: " ";
+}
